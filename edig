@@ -98,6 +98,8 @@ def _lookup(tld, fqdn, data):
 
     print('\n\n' + BOLD + 'REDIRECT' + NORMAL)
     try:
+        if not data.startswith('http'):
+            data = 'http://' + data
         r = requests.get(data, timeout=5)
         for i, response in enumerate(r.history, 1):
             print('\t{} : {}'.format(response.status_code, response.url))
