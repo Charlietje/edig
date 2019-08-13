@@ -18,6 +18,8 @@ def dns_lookup(qname, qtype):
     try:
         answer = resolver.query(qname, qtype)
         rdata = answer.rrset
+        if qtype != "CNAME":
+            print('\n' + BOLD + qtype + NORMAL)
         if qtype == 'SOA':
             print(TAB, rdata[0].mname)
         elif qtype == 'A':
@@ -30,7 +32,9 @@ def dns_lookup(qname, qtype):
         else:
             print(TAB, rdata.to_text().replace('\n', '\n' + TAB + ' '))
     except dns.resolver.NXDOMAIN:
-        print(TAB, 'NXDOMAIN')
+        if qtype == "A":
+            print('\n' + BOLD + qtype + NORMAL)
+            print(TAB, 'NXDOMAIN')
     except dns.resolver.NoAnswer:
         pass
         #  print("NoAnswer")
@@ -62,37 +66,24 @@ def _db_lookup(ip):
     cursor.execute(db_query + '"%%' + ip + '%%"')
     row = cursor.fetchone()
     if row is not None:
+        print('\n' + BOLD + 'SERVER' + NORMAL)
         print(TAB + ' ' + ip + ' = ' + row[0])
     cursor.close()
     connection.close()
 
 
 def _lookup(tld, fqdn, data):
-    print(BOLD + 'SOA' + NORMAL)
     dns_lookup(tld, 'SOA')
-
-    print('\n' + BOLD + 'NS' + NORMAL)
     dns_lookup(tld, 'NS')
-
-    print('\n' + BOLD + 'CNAME/A' + NORMAL)
     dns_lookup(fqdn, 'CNAME')
     ip, rev = dns_lookup(fqdn, 'A')
-
-    print('\n' + BOLD + 'PTR' + NORMAL)
     dns_lookup(rev, 'PTR')
-
-    print('\n' + BOLD + 'SERVER' + NORMAL)
     _db_lookup(ip)
-
-    print('\n' + BOLD + 'TXT' + NORMAL)
     dns_lookup(tld, 'TXT')
-
-    print('\n' + BOLD + 'MX' + NORMAL)
     dns_lookup(tld, 'MX')
-
-    print('\n' + BOLD + 'WHOIS' + NORMAL)
     try:
         whois = IPWhois(ip).lookup_whois()
+        print('\n' + BOLD + 'WHOIS' + NORMAL)
         print(TAB, 'description: ', whois['asn_description'])
         print(TAB, 'netname    : ', whois['nets'][0]['name'])
     except Exception:
@@ -118,14 +109,13 @@ def _rev_lookup(ip):
         exit(1)
 
     rev = '.'.join(reversed(ip.split('.'))) + '.in-addr.arpa'
-    print('\n' + BOLD + 'PTR' + NORMAL)
     dns_lookup(rev, 'PTR')
 
-    print('\n' + BOLD + 'GEOIP' + NORMAL + '\n\t', country.country(ip).country.name)
+    print('\n' + BOLD + 'GEOIP' + NORMAL + '\n' + TAB, country.country(ip).country.name)
 
-    print('\n' + BOLD + 'WHOIS' + NORMAL)
     try:
         whois = IPWhois(ip).lookup_whois()
+        print('\n' + BOLD + 'WHOIS' + NORMAL)
         print(TAB, 'description: ', whois['asn_description'])
         print(TAB, 'netname    : ', whois['nets'][0]['name'])
     except Exception:
