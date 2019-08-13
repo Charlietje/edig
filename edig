@@ -19,23 +19,23 @@ def dns_lookup(qname, qtype):
         answer = resolver.query(qname, qtype)
         rdata = answer.rrset
         if qtype == 'SOA':
-            print('\t', rdata[0].mname)
+            print(TAB, rdata[0].mname)
         elif qtype == 'A':
-            print('\t', rdata.to_text().replace('\n', '\n\t '))
+            print(TAB, rdata.to_text().replace('\n', '\n' + TAB + ' '))
             ip = str(rdata[0])
             rev = '.'.join(reversed(ip.split('.'))) + '.in-addr.arpa'
             if ip == "217.19.237.54":
-                print("\t URL FORWARDER COMBELL")
+                print(TAB, "URL FORWARDER COMBELL")
             return ip, rev
         else:
-            print('\t', rdata.to_text().replace('\n', '\n\t '))
+            print(TAB, rdata.to_text().replace('\n', '\n' + TAB + ' '))
     except dns.resolver.NXDOMAIN:
-        print('\tNXDOMAIN')
+        print(TAB, 'NXDOMAIN')
     except dns.resolver.NoAnswer:
         pass
         #  print("NoAnswer")
     except Exception:
-        print('\tError')
+        print(TAB, 'Error')
 
 
 def _db_lookup(ip):
@@ -43,7 +43,7 @@ def _db_lookup(ip):
     userconfigdir = os.environ.get('HOME') + '/.config/edig'
     userconfigfile = userconfigdir + '/config.ini'
     if len(config.read(userconfigfile)) == 0:
-        print("\tCouldn't not read config file: " + userconfigfile)
+        print(TAB, "Couldn't not read config file: " + userconfigfile)
         return
     try:
         db_host = config['DB']['host']
@@ -51,7 +51,7 @@ def _db_lookup(ip):
         db_password = config['DB']['password']
         db_query = config['DB']['query']
     except Exception:
-        print("Errors in " + userconfigfile)
+        print(TAB, "Errors in " + userconfigfile)
 
     connection = mysql.connector.connect(
         host=db_host,
@@ -62,7 +62,7 @@ def _db_lookup(ip):
     cursor.execute(db_query + '"%%' + ip + '%%"')
     row = cursor.fetchone()
     if row is not None:
-        print('\t' + ip + ' = ' + row[0])
+        print(TAB + ' ' + ip + ' = ' + row[0])
     cursor.close()
     connection.close()
 
@@ -71,41 +71,41 @@ def _lookup(tld, fqdn, data):
     print(BOLD + 'SOA' + NORMAL)
     dns_lookup(tld, 'SOA')
 
-    print('\n\n' + BOLD + 'NS' + NORMAL)
+    print('\n' + BOLD + 'NS' + NORMAL)
     dns_lookup(tld, 'NS')
 
-    print('\n\n' + BOLD + 'CNAME/A' + NORMAL)
+    print('\n' + BOLD + 'CNAME/A' + NORMAL)
     dns_lookup(fqdn, 'CNAME')
     ip, rev = dns_lookup(fqdn, 'A')
 
-    print('\n\n' + BOLD + 'PTR' + NORMAL)
+    print('\n' + BOLD + 'PTR' + NORMAL)
     dns_lookup(rev, 'PTR')
 
-    print('\n\n' + BOLD + 'SERVER' + NORMAL)
+    print('\n' + BOLD + 'SERVER' + NORMAL)
     _db_lookup(ip)
 
-    print('\n\n' + BOLD + 'TXT' + NORMAL)
+    print('\n' + BOLD + 'TXT' + NORMAL)
     dns_lookup(tld, 'TXT')
 
-    print('\n\n' + BOLD + 'MX' + NORMAL)
+    print('\n' + BOLD + 'MX' + NORMAL)
     dns_lookup(tld, 'MX')
 
-    print('\n\n' + BOLD + 'WHOIS' + NORMAL)
+    print('\n' + BOLD + 'WHOIS' + NORMAL)
     try:
         whois = IPWhois(ip).lookup_whois()
-        print('\tdescription:\t', whois['asn_description'])
-        print('\tnetname:\t', whois['nets'][0]['name'])
+        print(TAB, 'description: ', whois['asn_description'])
+        print(TAB, 'netname    : ', whois['nets'][0]['name'])
     except Exception:
         pass
 
-    print('\n\n' + BOLD + 'REDIRECT' + NORMAL)
+    print('\n' + BOLD + 'REDIRECT' + NORMAL)
     try:
         if not data.startswith('http'):
             data = 'http://' + data
         r = requests.get(data, timeout=5)
         for i, response in enumerate(r.history, 1):
-            print('\t{} : {}'.format(response.status_code, response.url))
-        print('\t{} : {}'.format(r.status_code, r.url))
+            print(TAB, '{} => {}'.format(response.status_code, response.url))
+        print(TAB, '{} => {}'.format(r.status_code, r.url))
     except Exception:
         pass
 
@@ -118,26 +118,27 @@ def _rev_lookup(ip):
         exit(1)
 
     rev = '.'.join(reversed(ip.split('.'))) + '.in-addr.arpa'
-    print('\n\n' + BOLD + 'PTR' + NORMAL)
+    print('\n' + BOLD + 'PTR' + NORMAL)
     dns_lookup(rev, 'PTR')
 
-    print('\n\n' + BOLD + 'GEOIP' + NORMAL + '\n\t', country.country(ip).country.name)
+    print('\n' + BOLD + 'GEOIP' + NORMAL + '\n\t', country.country(ip).country.name)
 
-    print('\n\n' + BOLD + 'WHOIS' + NORMAL)
+    print('\n' + BOLD + 'WHOIS' + NORMAL)
     try:
         whois = IPWhois(ip).lookup_whois()
-        print('\tdescription:\t', whois['asn_description'])
-        print('\tnetname:\t', whois['nets'][0]['name'])
+        print(TAB, 'description: ', whois['asn_description'])
+        print(TAB, 'netname    : ', whois['nets'][0]['name'])
     except Exception:
         pass
 
 
 def main():
-    global BOLD, NORMAL
+    global BOLD, NORMAL, TAB
     global resolver
 
     BOLD = '\033[1m'
     NORMAL = '\033[0m'
+    TAB = '    '
     parser = argparse.ArgumentParser(description="Extended dig program")
     parser.add_argument('data', type=str, help="url, domain or ip address")
     parser.add_argument('-n', '--nameserver', type=str, default='8.8.8.8', help="default is 8.8.8.8")
