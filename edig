@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import re
+import os
 import argparse
 import socket
 import dns.resolver
 import dns.name
 import geoip2.database
 import requests
+import configparser
+import mysql.connector
 from tld import get_tld
 from ipwhois import IPWhois
 
@@ -35,6 +38,33 @@ def dns_lookup(qname, qtype):
         print('\tError')
 
 
+def _db_lookup(ip):
+    config = configparser.ConfigParser()
+    userconfigdir = os.environ.get('HOME') + '/.config/edig'
+    userconfigfile = userconfigdir + '/config.ini'
+    try:
+        config.read(userconfigfile)
+        db_host = config['DB']['host']
+        db_user = config['DB']['user']
+        db_password = config['DB']['password']
+        db_query = config['DB']['query']
+    except Exception:
+        print("Couldn't not read " + userconfigfile)
+
+    connection = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        passwd=db_password
+    )
+    cursor = connection.cursor()
+    cursor.execute(db_query + '"%%' + ip + '%%"')
+    row = cursor.fetchone()
+    if row is not None:
+        print('\t' + ip + ' = ' + row[0])
+    cursor.close()
+    connection.close()
+
+
 def _lookup(tld, fqdn, data):
     print(BOLD + 'SOA' + NORMAL)
     dns_lookup(tld, 'SOA')
@@ -50,8 +80,7 @@ def _lookup(tld, fqdn, data):
     dns_lookup(rev, 'PTR')
 
     print('\n\n' + BOLD + 'SERVER' + NORMAL)
-    # todo
-    # check ip in intranet
+    _db_lookup(ip)
 
     print('\n\n' + BOLD + 'TXT' + NORMAL)
     dns_lookup(tld, 'TXT')
@@ -105,8 +134,7 @@ def main():
 
     BOLD = '\033[1m'
     NORMAL = '\033[0m'
-    parser = argparse.ArgumentParser(description="Extended dig program",
-                                     epilog="needed modules: dnspython, geoip2, tld and ipwhois ")
+    parser = argparse.ArgumentParser(description="Extended dig program")
     parser.add_argument('data', type=str, help="url, domain or ip address")
     parser.add_argument('-n', '--nameserver', type=str, default='8.8.8.8', help="default is 8.8.8.8")
     args = parser.parse_args()
