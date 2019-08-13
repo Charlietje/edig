@@ -42,14 +42,16 @@ def _db_lookup(ip):
     config = configparser.ConfigParser()
     userconfigdir = os.environ.get('HOME') + '/.config/edig'
     userconfigfile = userconfigdir + '/config.ini'
+    if len(config.read(userconfigfile)) == 0:
+        print("\tCouldn't not read config file: " + userconfigfile)
+        return
     try:
-        config.read(userconfigfile)
         db_host = config['DB']['host']
         db_user = config['DB']['user']
         db_password = config['DB']['password']
         db_query = config['DB']['query']
     except Exception:
-        print("Couldn't not read " + userconfigfile)
+        print("Errors in " + userconfigfile)
 
     connection = mysql.connector.connect(
         host=db_host,
