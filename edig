@@ -18,8 +18,7 @@ def dns_lookup(qname, qtype):
     try:
         answer = resolver.query(qname, qtype)
         rdata = answer.rrset
-        if qtype != "CNAME":
-            print('\n' + BOLD + qtype + NORMAL)
+        print('\n' + BOLD + qtype + NORMAL)
         if qtype == 'SOA':
             print(TAB, rdata[0].mname)
         elif qtype == 'A':
@@ -39,7 +38,7 @@ def dns_lookup(qname, qtype):
         pass
         #  print("NoAnswer")
     except Exception:
-        print(TAB, 'Error')
+        print('\nError:', qtype)
 
 
 def _db_lookup(ip):
@@ -54,6 +53,8 @@ def _db_lookup(ip):
         db_user = config['DB']['user']
         db_password = config['DB']['password']
         db_query = config['DB']['query']
+        # replace {} with ip address
+        db_query = db_query.replace('{}', ip)
     except Exception:
         print(TAB, "Errors in " + userconfigfile)
 
@@ -63,12 +64,12 @@ def _db_lookup(ip):
         passwd=db_password
     )
     cursor = connection.cursor()
-    cursor.execute(db_query + '"%%' + ip + '%%"')
+    cursor.execute(db_query)
     row = cursor.fetchone()
     if row is not None:
         print('\n' + BOLD + 'SERVER' + NORMAL)
         print(TAB + ' ' + ip + ' = ' + row[0])
-    cursor.close()
+    # cursor.close()
     connection.close()
 
 
