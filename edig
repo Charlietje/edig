@@ -104,9 +104,10 @@ def _lookup(tld, fqdn, data):
 
 def _rev_lookup(ip):
     try:
-        country = geoip2.database.Reader('/usr/local/share/GeoIP/GeoLite2-Country_20190806/GeoLite2-Country.mmdb')
+        country = geoip2.database.Reader('/usr/local/share/GeoIP/GeoLite2-Country_20191224/GeoLite2-Country.mmdb')
     except FileNotFoundError:
-        print("Download database from https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz")
+        #  print("Download database from https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz")
+        print("Download database from https://web.archive.org/web/20191227182412/https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz")
         exit(1)
 
     rev = '.'.join(reversed(ip.split('.'))) + '.in-addr.arpa'
