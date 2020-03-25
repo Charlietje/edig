@@ -10,6 +10,6 @@ setup(
     license="MIT",
     packages=find_packages(),
     scripts=['edig'],
-    install_requires=['dnspython', 'geoip2', 'tld','ipwhois'],
+    install_requires=['dnspython', 'geoip2', 'tld','ipwhois','mysql-connector-python'],
     python_requires='>3.4',
 )
