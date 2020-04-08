@@ -112,6 +112,7 @@ def _rev_lookup(ip):
 
     rev = '.'.join(reversed(ip.split('.'))) + '.in-addr.arpa'
     dns_lookup(rev, 'PTR')
+    _db_lookup(ip)
 
     print('\n' + BOLD + 'GEOIP' + NORMAL + '\n' + TAB, country.country(ip).country.name)
 
